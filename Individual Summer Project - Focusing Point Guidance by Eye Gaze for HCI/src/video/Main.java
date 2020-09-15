@@ -1,4 +1,4 @@
-package application;
+package video;
 
 import org.opencv.core.Core;
 

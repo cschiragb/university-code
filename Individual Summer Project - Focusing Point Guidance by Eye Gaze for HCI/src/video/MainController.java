@@ -1,4 +1,4 @@
-package application.image;
+package video;
 
 import java.io.File;
 import java.io.IOException;
@@ -83,7 +83,6 @@ public class MainController {
 	private Net yoloV3Net;
 	private VideoCapture videoToWatch;
 	private Size yoloSize = new Size(320, 320);
-	private Mat image = Imgcodecs.imread("Resources/Media/Two_Cars.jpg");
 
 	/**
 	 * The method is called by the Main Class, at the start up 
@@ -114,9 +113,9 @@ public class MainController {
 		/*
 		 * Initialisation for the YOLOv3 component
 		 */
-		yoloV3Weights 	= "Resources/YOLOv3/yolov3-320.weights";
-		yoloV3Config	= "Resources/YOLOv3/yolov3-320.cfg";
-		videoFile		= "Resources/Mask_RCNN/IMG_04.mp4";
+		yoloV3Weights 	= "Resources/YOLOv3/yolov3-tiny.weights";
+		yoloV3Config	= "Resources/YOLOv3/yolov3-tiny.cfg";
+		videoFile		= "Resources/Media/Black_Ferrari.mp4";
 		videoToWatch	= new VideoCapture(videoFile);
 
 		yoloV3Net		= Dnn.readNetFromDarknet(yoloV3Config, yoloV3Weights);
@@ -202,10 +201,13 @@ public class MainController {
 
 	private Mat grabYoloFrame() {
 
-		Mat frame 			= this.image.clone();
+		Mat frame 			= new Mat();
+		boolean status 		= videoToWatch.read(frame);
 		List<Mat> result 	= new ArrayList<>();
 
 		Imgproc.resize(frame, frame, new Size(262, 465));
+		
+		if (status) {
 			
 			Mat yoloBlob = Dnn.blobFromImage(
 					frame, 
@@ -295,15 +297,15 @@ public class MainController {
 					
 					double ymin = box.tl().y;
 					double ymax = box.br().y;
-					
-					/*
-					 * We're only interested in showing bounding boxes
-					 * for which the gaze reticle resides within
-					 */			
+						
 					double xLoss = Math.pow(this.gazeReticle.getCenterX() - (xmin + box.width/2), 2);
 					double yLoss = Math.pow(this.gazeReticle.getCenterY() - (ymin + box.height/2), 2);
 					double L2Loss = xLoss + yLoss;
 					possibleBoxes.put(L2Loss, box);
+					
+//					}
+					
+
 					}
 				
 				if (possibleBoxes.size() > 0) {
@@ -313,8 +315,9 @@ public class MainController {
 					this.focusReticle.setCenterY(boxToShow.tl().y + boxToShow.height/2 + 55);
 				}
 			}
-			return frame;
 		}
+		return frame;
+	}
 
 	/**
 	 * Method to take in frame from webcam, detect eyes and faces, infer 
@@ -372,7 +375,11 @@ public class MainController {
 			faceBinaryMaskResized = faceBinaryMask.reshape(0, 1);					// Flatten the face binary mask to one row and many columns
 
 			/*
-			 * Detect the eyes within the face region of interest. This is more robust to misdetections compared to using the whole frame from the webcam
+			 * Detect the eyes within the face 
+			 * region of interest. This is more 
+			 * robust to misdetections compared 
+			 * to using the whole frame from the 
+			 * webcam
 			 */
 			this.eyeCascade.detectMultiScale(
 					faceRoI, 
@@ -385,7 +392,7 @@ public class MainController {
 				/*
 				 * We can't be sure which eyes are left and 
 				 * right so we use the x coordinates of the 
-				 * rectangles to work this out.
+				 * rectangles to work this out
 				 */
 				if (eyeArray[0].x < eyeArray[1].x) {
 					eyeRRoI = new Mat(faceRoI, eyeArray[0]);
@@ -516,7 +523,7 @@ public class MainController {
 				 */
 				double currentCentreX = this.gazeReticle.getCenterX();
 				double currentCentreY = this.gazeReticle.getCenterY();
-	
+				
 				/*
 				 * Calculate the new position of the eye gaze reticle on the screen.
 				 * For X axis, as camera is in centre of gaze pane, take the offset 131,
@@ -528,7 +535,7 @@ public class MainController {
 				 */
 				double newCentreX = (131.0 + (xcoord[0] * 0.39370079 * 113.49));
 				double newCentreY = (ycoord[0] * -1 * 0.39370079 * 113.49); 
-
+				
 				this.gazeReticle.setCenterX(newCentreX);
 				this.gazeReticle.setCenterY(newCentreY);
 			}

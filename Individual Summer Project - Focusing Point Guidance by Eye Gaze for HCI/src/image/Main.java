@@ -1,4 +1,4 @@
-package application.image;
+package image;
 
 import org.opencv.core.Core;
 
